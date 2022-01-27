@@ -3,7 +3,7 @@ from konturmarket_class_lib import KonturMarket
 
 
 if __name__ == "__main__":
-    km = KonturMarket()
-    if km.login():
-        km.get_goods_egais_name()
+    kmarket = KonturMarket()
+    if kmarket.login():
+        kmarket.get_egais_assortment()
         print(1)

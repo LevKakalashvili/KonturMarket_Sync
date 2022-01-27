@@ -1,12 +1,11 @@
 """В модуле описаны классы для работы с сервисом Контур.Маркет https://market.kontur.ru/"""
-
+import json
 from dataclasses import dataclass
 from typing import Any
 
-from bs4 import BeautifulSoup
 import requests
 
-import konturmarket_urls as km_urls
+from konturmarket_urls import Url, UrlType, get_url
 import privatedata.kontrurmarket_privatedata as km_pvdata
 
 session = requests.Session()
@@ -17,12 +16,15 @@ class GoodEGAIS:
     name: str = ''  # ЕГАИС наименование
     # Код алкогольной продукции (код АП) в ЕГАИС. Уникальный 19-ти значный код. Если значящих цифр в
     # коде меньше 19-ти, то в перед дописываются нули. Это при строковом представлении
-    ap_code: int = 0
+    alco_code: int = 0
 
-    def get_ap_code(self) -> str:
+    def get_string_alco_code(self) -> str:
         """Метод возвращает строковое 19-ти символьное представление кода алкогольной продукции"""
-        return self.ap_code.__str__()
+        lenght = len(str(self.alco_code))
+        return f'{str(0) * (19 - lenght)}{str(self.alco_code)}'
 
+    def to_tuple(self):
+        return (self.get_string_alco_code(), self.name)
 
 @dataclass()
 class KonturMarket:
@@ -32,27 +34,30 @@ class KonturMarket:
         auth_data = {
             'Login': km_pvdata.USER,
             'Password': km_pvdata.PASSWORD,
-            'Remember': 'false'
+            'Remember': False
         }
-        try:
-            # Пытаемся залогинится на сайте
-            response = session.post(
-                url=km_urls.get_url(km_urls.UrlType.login),
-                data=auth_data,
-                headers=km_urls.get_headers()
-            )
-            response.raise_for_status()
-        except requests.RequestException as error:
-            return False  # возвращаем False есди не удалось авторизоваться
-        return True
+        # auth_data = '{"Login":"kakalashvililev@yandex.ru","Password":"340354Lev!","Remember":false}'
+        # Пытаемся залогиниться на сайте
+        url: Url = get_url(UrlType.login)
+        response = session.post(
+            url=url.url,
+            data=json.dumps(auth_data),
+            headers=url.headers,
+            cookies=url.cookies
+        )
+        return response.ok
 
-    def get_goods_egais_name(self):
-        try:
-            response = session.get(
-                url=km_urls.get_url(km_urls.UrlType.egais_name),
-                headers=km_urls.get_headers()
-            )
-            response.raise_for_status()
+    def get_egais_assortment(self):
+        url: Url = get_url(UrlType.egais_assortment)
+        response = session.get(url.url)
+        goods = dict(response.json()).get('list')
+        # Если в получили успешный ответ и есть список товаров
+        if response.ok and goods:
             print(response.text)
-        except requests.RequestException as error:
-            return 0
+
+
+if __name__ == "__main__":
+    good = GoodEGAIS()
+    good.name="Что-то"
+    good.alco_code=123456789
+    print(good.get_string_alco_code())
