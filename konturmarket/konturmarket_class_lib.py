@@ -1,7 +1,9 @@
 """В модуле описаны классы для работы с сервисом Контур.Маркет https://market.kontur.ru/"""
 import json
 from dataclasses import dataclass
-from typing import Any
+from pydantic import BaseModel, Field
+
+from typing import Any, List
 
 import requests
 
@@ -10,27 +12,27 @@ import privatedata.kontrurmarket_privatedata as km_pvdata
 
 session = requests.Session()
 
-@dataclass
-class GoodEGAIS:
-    """Класc описывает структуру товара, продукции в соответствии с терминами ЕГАИС"""
-    name: str = ''  # ЕГАИС наименование
-    # Код алкогольной продукции (код АП) в ЕГАИС. Уникальный 19-ти значный код. Если значящих цифр в
-    # коде меньше 19-ти, то в перед дописываются нули. Это при строковом представлении
-    alco_code: int = 0
 
-    def get_string_alco_code(self) -> str:
-        """Метод возвращает строковое 19-ти символьное представление кода алкогольной продукции"""
-        lenght = len(str(self.alco_code))
-        return f'{str(0) * (19 - lenght)}{str(self.alco_code)}'
+class GoodEGAIS(BaseModel):
+    """Клас описывает структуру товара, продукции в соответствии с терминами ЕГАИС"""
+    # ЕГАИС наименование
+    name: str = Field(alias='fullName')
+
+    # Код алкогольной продукции (код АП) в ЕГАИС. Уникальный 19-ти значный код. Если значащих цифр в
+    # коде меньше 19-ти, то вперед дописываются нули. Это при строковом представлении
+    alco_code: str = Field(alias='egaisCode')
 
     def to_tuple(self):
-        return (self.get_string_alco_code(), self.name)
+        """Метод возвращает кортеж вида (ЕГАИС_КОД, ЕГАИС_НАИМЕНОВАНИЕ)."""
+        return (self.alco_code, self.name)
+
 
 @dataclass()
 class KonturMarket:
     """Класс описывает работу с сервисом Контур.Маркет https://market.kontur.ru/"""
 
-    def login(self) -> bool:
+    @staticmethod
+    def login() -> bool:
         auth_data = {
             'Login': km_pvdata.USER,
             'Password': km_pvdata.PASSWORD,
@@ -47,17 +49,27 @@ class KonturMarket:
         )
         return response.ok
 
-    def get_egais_assortment(self):
+    @staticmethod
+    def get_egais_assortment() -> List[GoodEGAIS]:
+        goods_list: List[GoodEGAIS] = list()
+
         url: Url = get_url(UrlType.egais_assortment)
         response = session.get(url.url)
+
         goods = dict(response.json()).get('list')
-        # Если в получили успешный ответ и есть список товаров
+        # Если получили успешный ответ и есть список товаров
         if response.ok and goods:
-            print(response.text)
+            # Проходим по всему списку товаров, наименований.
+            for good in goods:
+                # Получаем словарь с информацией о товаре
+                goods_list.append(GoodEGAIS(**good['productInfo']))
+            return goods_list
+        else:
+            return []
 
 
 if __name__ == "__main__":
     good = GoodEGAIS()
-    good.name="Что-то"
-    good.alco_code=123456789
+    good.name = "Что-то"
+    good.alco_code = 123456789
     print(good.get_string_alco_code())

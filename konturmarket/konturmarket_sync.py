@@ -4,6 +4,7 @@ from konturmarket_class_lib import KonturMarket
 
 if __name__ == "__main__":
     kmarket = KonturMarket()
+    # Если залогинились.
     if kmarket.login():
-        kmarket.get_egais_assortment()
-        print(1)
+        if kmarket.get_egais_assortment():
+            print(1)
