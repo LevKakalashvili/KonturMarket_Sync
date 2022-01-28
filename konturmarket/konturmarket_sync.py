@@ -1,10 +1,10 @@
 """Модуль для запуска синхронизации Контур.Маркета с БД"""
-from konturmarket_class_lib import KonturMarket
+from typing import List
+from konturmarket_class_lib import KonturMarket, GoodEGAIS
 
 
 if __name__ == "__main__":
     kmarket = KonturMarket()
     # Если залогинились.
     if kmarket.login():
-        if kmarket.get_egais_assortment():
-            print(1)
+        egais_goods: List[GoodEGAIS] = kmarket.get_egais_assortment()

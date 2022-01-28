@@ -3,7 +3,7 @@ import json
 from dataclasses import dataclass
 from pydantic import BaseModel, Field
 
-from typing import Any, List
+from typing import List, Tuple
 
 import requests
 
@@ -22,7 +22,7 @@ class GoodEGAIS(BaseModel):
     # коде меньше 19-ти, то вперед дописываются нули. Это при строковом представлении
     alco_code: str = Field(alias='egaisCode')
 
-    def to_tuple(self):
+    def to_tuple(self) -> Tuple[str, str]:
         """Метод возвращает кортеж вида (ЕГАИС_КОД, ЕГАИС_НАИМЕНОВАНИЕ)."""
         return (self.alco_code, self.name)
 
@@ -66,10 +66,3 @@ class KonturMarket:
             return goods_list
         else:
             return []
-
-
-if __name__ == "__main__":
-    good = GoodEGAIS()
-    good.name = "Что-то"
-    good.alco_code = 123456789
-    print(good.get_string_alco_code())
